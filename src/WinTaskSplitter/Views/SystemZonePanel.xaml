@@ -1,0 +1,23 @@
+<UserControl x:Class="WinTaskSplitter.Views.SystemZonePanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border Background="{Binding BackgroundColor, Converter={StaticResource StringToBrushConverter}}"
+            BorderBrush="{Binding BorderColor, Converter={StaticResource StringToBrushConverter}}"
+            BorderThickness="{Binding BorderThickness}">
+
+        <!-- Clock only -->
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,12,0">
+            <TextBlock x:Name="ClockTime"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="White"
+                       HorizontalAlignment="Right"/>
+            <TextBlock x:Name="ClockDate"
+                       FontSize="10"
+                       Foreground="#AAAAAA"
+                       HorizontalAlignment="Right"/>
+        </StackPanel>
+    </Border>
+</UserControl>
