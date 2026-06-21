@@ -14,9 +14,10 @@
 
     <DockPanel LastChildFill="True">
 
-        <!-- System zone: clock only, fixed width, docked right -->
-        <views:SystemZonePanel DockPanel.Dock="Right"
-                               Width="130"
+        <!-- System zone: tray icons + status icons + clock, docked right (sizes to content) -->
+        <views:SystemZonePanel x:Name="SystemZonePanelControl"
+                               DockPanel.Dock="Right"
+                               MinWidth="190"
                                DataContext="{Binding SystemZone}"/>
 
         <!-- All user zones (incl. Allgemein): resizable via GridSplitter — built in code-behind -->

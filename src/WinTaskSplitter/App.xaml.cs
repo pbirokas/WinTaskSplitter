@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using System.Security.Principal;
 using System.Windows;
 using System.Windows.Threading;
+using ManagedShell;
 using WinTaskSplitter.Services;
 using WinTaskSplitter.ViewModels;
 using WinTaskSplitter.Views;
@@ -12,6 +12,8 @@ namespace WinTaskSplitter;
 
 public partial class App : Application
 {
+    private ShellManager? _shellManager;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -20,24 +22,65 @@ public partial class App : Application
         DispatcherUnhandledException          += OnDispatcherException;
         AppDomain.CurrentDomain.UnhandledException += OnDomainException;
 
-        if (!IsRunningAsAdmin())
-        {
-            RestartAsAdmin();
-            return;
-        }
+        // IMPORTANT: run at normal integrity (asInvoker — no self-elevation).
+        // An elevated window cannot receive Shell_NotifyIcon (WM_COPYDATA) from normal
+        // apps due to UIPI, so the embedded notification area would miss most tray icons.
+        // Hiding Explorer's taskbar works fine without admin (same user session).
 
         var config  = new ConfigService();
         var tracker = new WindowTracker();
         var vm      = new TaskbarViewModel(config, tracker);
-        var window  = new TaskbarWindow(vm, tracker);
 
+        _shellManager = CreateShellManager();
+
+        // Order matters: hide Explorer's taskbar FIRST, then start our tray service.
+        // The tray service broadcasts "TaskbarCreated", which makes apps re-add their
+        // notification icons — they must register with us, not with Explorer's (now
+        // hidden) tray, so the embedded notification area actually captures them.
+        if (_shellManager is not null)
+        {
+            _shellManager.ExplorerHelper.HideExplorerTaskbar = true;
+            _shellManager.NotificationArea.Initialize();
+        }
+
+        var window  = new TaskbarWindow(vm, tracker, _shellManager?.NotificationArea);
         MainWindow = window;
         window.Show();
     }
 
+    private void RestoreTaskbar()
+    {
+        try
+        {
+            if (_shellManager is not null)
+                _shellManager.ExplorerHelper.HideExplorerTaskbar = false;
+        }
+        catch { /* ignore */ }
+        TaskbarHider.Restore(); // fallback when ManagedShell is unavailable
+    }
+
+    // ManagedShell powers the embedded Windows notification area (third-party tray icons).
+    // Only the tray service is enabled — window tracking is handled by our own WindowTracker.
+    private static ShellManager? CreateShellManager()
+    {
+        try
+        {
+            ShellConfig config         = ShellManager.DefaultShellConfig;
+            config.EnableTasksService  = false;
+            config.EnableTrayService   = true;
+            config.AutoStartTrayService = false; // we Initialize() manually after hiding Explorer's taskbar
+            return new ShellManager(config);
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceError($"[WinTaskSplitter] ManagedShell init failed: {ex}");
+            return null; // degrade gracefully — bar works without the embedded tray
+        }
+    }
+
     private void OnDispatcherException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        TaskbarHider.Restore();
+        RestoreTaskbar();
         System.Diagnostics.Trace.TraceError(
             $"[WinTaskSplitter] Unhandled exception: {e.Exception}");
         MessageBox.Show(
@@ -48,48 +91,16 @@ public partial class App : Application
         e.Handled = true;
     }
 
-    private static void OnDomainException(object sender, UnhandledExceptionEventArgs e)
+    private void OnDomainException(object sender, UnhandledExceptionEventArgs e)
     {
-        TaskbarHider.Restore();
+        RestoreTaskbar();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        TaskbarHider.Restore();
+        RestoreTaskbar();
+        // Hand the notification area back to Explorer so tray icons survive our exit.
+        try { _shellManager?.Dispose(); } catch { /* ignore */ }
         base.OnExit(e);
-    }
-
-    private static bool IsRunningAsAdmin()
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
-    }
-
-    private void RestartAsAdmin()
-    {
-        try
-        {
-            var exePath = Environment.ProcessPath;
-            if (exePath is null)
-            {
-                MessageBox.Show("Pfad zur Anwendung konnte nicht ermittelt werden.",
-                    "Erhöhte Rechte erforderlich", MessageBoxButton.OK, MessageBoxImage.Warning);
-                Shutdown();
-                return;
-            }
-            Process.Start(new ProcessStartInfo(exePath)
-            {
-                Verb            = "runas",
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"WinTaskSplitter benötigt Administrator-Rechte.\n\n{ex.Message}",
-                "Erhöhte Rechte erforderlich",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
-        Shutdown();
     }
 }

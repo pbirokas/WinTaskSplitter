@@ -6,6 +6,7 @@ public class AppSettings
     public double        BarThickness    { get; set; } = 48;
     public bool          StartWithWindows { get; set; } = false;
     public double        LabelFontSize      { get; set; } = 8;
+    public double        BackgroundOpacity  { get; set; } = 1.0; // 0.0 = transparent, 1.0 = deckend
     public Guid          StartButtonZoneId  { get; set; } = Guid.Empty;
     public List<Zone>    Zones              { get; set; } = [];
     public List<AppAssignment> Assignments { get; set; } = [];

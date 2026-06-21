@@ -106,6 +106,28 @@
                        Margin="8,0,0,0"/>
         </Grid>
 
+        <!-- Hintergrund-Transparenz -->
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="44"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Hintergrund-Deckkraft"
+                       Style="{StaticResource FieldLabel}"/>
+            <Slider Grid.Column="1"
+                    Minimum="0.1" Maximum="1.0"
+                    TickFrequency="0.05" IsSnapToTickEnabled="True"
+                    VerticalAlignment="Center"
+                    Value="{Binding BackgroundOpacity}"/>
+            <TextBlock Grid.Column="2"
+                       Text="{Binding BackgroundOpacity, StringFormat={}{0:P0}}"
+                       Foreground="White" FontSize="12"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+        </Grid>
+
         <!-- Start-Schaltfläche -->
         <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>

@@ -20,6 +20,7 @@ public partial class TaskbarViewModel : ObservableObject
     [ObservableProperty] private ZoneViewModel? _systemZone;
     [ObservableProperty] private ZoneViewModel? _generalZone;
     [ObservableProperty] private double         _labelFontSize;
+    [ObservableProperty] private double         _backgroundOpacity;
     [ObservableProperty] private ZoneViewModel? _startButtonZone;
 
     public TaskbarViewModel(ConfigService config, WindowTracker tracker)
@@ -28,7 +29,8 @@ public partial class TaskbarViewModel : ObservableObject
         _tracker  = tracker;
         _settings = _config.Load();
 
-        _labelFontSize = _settings.LabelFontSize;
+        _labelFontSize     = _settings.LabelFontSize;
+        _backgroundOpacity = _settings.BackgroundOpacity;
 
         BuildZones();
         InitStartButtonZone();
@@ -37,6 +39,9 @@ public partial class TaskbarViewModel : ObservableObject
 
     partial void OnLabelFontSizeChanged(double value)
         => _settings.LabelFontSize = value;
+
+    partial void OnBackgroundOpacityChanged(double value)
+        => _settings.BackgroundOpacity = value;
 
     partial void OnStartButtonZoneChanged(ZoneViewModel? oldValue, ZoneViewModel? newValue)
     {
@@ -179,7 +184,8 @@ public partial class TaskbarViewModel : ObservableObject
     {
         foreach (var zone in AllZones())
             zone.SyncToModel();
-        _settings.LabelFontSize = LabelFontSize;
+        _settings.LabelFontSize     = LabelFontSize;
+        _settings.BackgroundOpacity = BackgroundOpacity;
         _config.Save(_settings);
     }
 

@@ -11,13 +11,17 @@ Ein vollständiger Ersatz der Windows 11-Taskleiste, der die Taskleiste in farbi
 - **Start-Schaltfläche** — ⊞-Button ist frei in jede Zone verschiebbar (Standard: Allgemein)
 - **App-Verwaltung** — Drag & Drop zwischen Zonen; Zuweisung wird dauerhaft gespeichert
 - **Natives Systemmenü** — Rechtsklick auf App-Icon öffnet das Windows-Kontextmenü
+- **System-Bereich** — WLAN-, Lautstärke- und Akku-Status live; Klick öffnet das jeweilige native Flyout
+- **Tray-Icons** — Drittanbieter-Infobereichssymbole (z. B. iCUE, Steam) werden eingebettet, inkl. „^"-Überlauf; immer-sichtbare Icons werden aus den Windows-Einstellungen übernommen
+- **Klickbare Uhr** — Linksklick öffnet Benachrichtigungen/Kalender, Rechtsklick das Kontextmenü
+- **Transparenz** — Hintergrund-Deckkraft der Zonen per Regler einstellbar
 - **Einstellungsfenster** — alle Zonen in einer Übersicht bearbeiten
 
 ## Voraussetzungen
 
 - Windows 11
 - .NET 9 Runtime
-- Administratorrechte (werden beim Start automatisch per UAC angefragt)
+- Keine Administratorrechte nötig (läuft als normaler Benutzer)
 
 ## Build
 
@@ -47,6 +51,7 @@ Gespeichert in `%APPDATA%\WinTaskSplitter\config.json`.
 - C# / WPF / .NET 9
 - CommunityToolkit.Mvvm
 - Hardcodet.NotifyIcon.Wpf
+- ManagedShell (eingebetteter Windows-Infobereich / Tray)
 
 ## Lizenz
 

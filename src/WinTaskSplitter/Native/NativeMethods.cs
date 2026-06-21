@@ -115,7 +115,34 @@ internal static class NativeMethods
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
     public const byte VK_LWIN      = 0x5B;
+    public const byte VK_A         = 0x41;
+    public const byte VK_N         = 0x4E;
     public const uint KEYEVENTF_KEYUP = 0x0002;
+
+    /// <summary>Presses Win+&lt;vk&gt; (e.g. Win+A = Quick Settings, Win+N = notifications).</summary>
+    public static void SendWinShortcut(byte vk)
+    {
+        keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+        keybd_event(vk, 0, 0, UIntPtr.Zero);
+        keybd_event(vk, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+    }
+
+    // ── Battery / power status ────────────────────────────────────────────
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SYSTEM_POWER_STATUS
+    {
+        public byte ACLineStatus;        // 0 = offline, 1 = online, 255 = unknown
+        public byte BatteryFlag;         // bit 0x80 = no system battery
+        public byte BatteryLifePercent;  // 0..100, 255 = unknown
+        public byte SystemStatusFlag;
+        public int  BatteryLifeTime;
+        public int  BatteryFullLifeTime;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS lpSystemPowerStatus);
 
     [DllImport("user32.dll")]
     public static extern uint GetDpiForWindow(IntPtr hWnd);

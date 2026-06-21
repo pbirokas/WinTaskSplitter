@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-21
+
+### System-Bereich (Tray)
+- Windows-Infobereich-Symbole (WLAN, Lautstärke, Akku) werden jetzt direkt in der Bar angezeigt
+- Live-Status: WLAN zeigt Verbindung (mit Standortdiensten auch Signalstärke), Lautstärke und Akku aktualisieren sich automatisch
+- Klick auf ein Symbol öffnet das jeweilige native Windows-Flyout
+- Drittanbieter-Tray-Icons (z. B. iCUE, Steam, Google Drive) erscheinen in der Bar, inkl. „^"-Überlauf für ausgeblendete Symbole
+- Welche Icons immer sichtbar sind, wird automatisch aus den Windows-Einstellungen übernommen
+- Uhr ist klickbar: Linksklick öffnet Benachrichtigungen/Kalender, Rechtsklick bietet Datum/Uhrzeit- und App-Einstellungen
+
+### Darstellung
+- Neue Transparenz-Option: Hintergrund-Deckkraft der Zonen per Regler einstellbar
+- Start-Schaltfläche zeigt jetzt das originale Windows-11-Logo
+
+### Unter der Haube
+- App läuft ohne Administrator-Rechte – kein UAC-Prompt mehr beim Start
+
 ## 2026-06-19 — Erster Release
 
 ### Taskleiste

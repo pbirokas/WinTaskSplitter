@@ -18,16 +18,25 @@ public partial class TaskbarWindow : Window
 {
     private readonly AppBarService _appBar;
     private readonly WindowTracker _tracker;
+    private readonly bool _managedTaskbar;
     private SettingsWindow? _settingsWindow;
     private const double BarHeight = 56;
 
-    public TaskbarWindow(TaskbarViewModel viewModel, WindowTracker tracker)
+    public TaskbarWindow(TaskbarViewModel viewModel, WindowTracker tracker,
+        ManagedShell.WindowsTray.NotificationArea? notificationArea)
     {
         InitializeComponent();
         DataContext = viewModel;
 
         _tracker = tracker;
         _appBar  = new AppBarService(this);
+
+        // When ManagedShell is active, App owns hiding/restoring Explorer's taskbar
+        // via ExplorerHelper. Our own TaskbarHider must stay out of the way then.
+        _managedTaskbar = notificationArea is not null;
+
+        if (notificationArea is not null)
+            SystemZonePanelControl.AttachTray(notificationArea);
 
         Width  = SystemParameters.PrimaryScreenWidth;
         Height = BarHeight;
@@ -45,7 +54,8 @@ public partial class TaskbarWindow : Window
 
         _appBar.Register(AppBarEdge.Bottom, BarHeight);
         _tracker.Initialize(hwnd);
-        TaskbarHider.Hide();
+        if (!_managedTaskbar)
+            TaskbarHider.Hide();
 
         BuildZonesGrid();
     }
@@ -179,7 +189,8 @@ public partial class TaskbarWindow : Window
             foreach (var zone in vm.Zones)
                 zone.PropertyChanged -= OnZonePropertyChanged;
         }
-        TaskbarHider.Restore();
+        if (!_managedTaskbar)
+            TaskbarHider.Restore(); // ManagedShell path is restored by App via ExplorerHelper
         _appBar.Dispose();
         _tracker.Dispose();
         base.OnClosed(e);

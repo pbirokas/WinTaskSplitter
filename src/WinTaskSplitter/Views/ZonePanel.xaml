@@ -4,9 +4,16 @@
              xmlns:vm="clr-namespace:WinTaskSplitter.ViewModels"
              AllowDrop="True">
 
-    <Border Background="{Binding BackgroundColor, Converter={StaticResource StringToBrushConverter}}"
-            BorderBrush="{Binding BorderColor, Converter={StaticResource StringToBrushConverter}}"
+    <Border BorderBrush="{Binding BorderColor, Converter={StaticResource StringToBrushConverter}}"
             BorderThickness="{Binding BorderThickness}">
+
+        <Border.Background>
+            <MultiBinding Converter="{StaticResource ColorOpacityToBrushConverter}">
+                <Binding Path="BackgroundColor"/>
+                <Binding Path="DataContext.BackgroundOpacity"
+                         RelativeSource="{RelativeSource AncestorType=Window}"/>
+            </MultiBinding>
+        </Border.Background>
 
         <!-- Zone context menu (right-click on empty bar area) -->
         <Border.ContextMenu>
@@ -58,8 +65,26 @@
                         </Setter>
                     </Style>
                 </Button.Style>
-                <TextBlock Text="⊞" FontSize="20" Foreground="White"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <!-- Windows 11 logo: four equal rounded tiles in a 2×2 grid -->
+                <Viewbox Width="18" Height="18"
+                         HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Width="20" Height="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="2"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="2"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle Grid.Row="0" Grid.Column="0" Fill="White" RadiusX="1.2" RadiusY="1.2"/>
+                        <Rectangle Grid.Row="0" Grid.Column="2" Fill="White" RadiusX="1.2" RadiusY="1.2"/>
+                        <Rectangle Grid.Row="2" Grid.Column="0" Fill="White" RadiusX="1.2" RadiusY="1.2"/>
+                        <Rectangle Grid.Row="2" Grid.Column="2" Fill="White" RadiusX="1.2" RadiusY="1.2"/>
+                    </Grid>
+                </Viewbox>
             </Button>
 
             <!-- Zone name: left-docked, vertically centered, with separator -->

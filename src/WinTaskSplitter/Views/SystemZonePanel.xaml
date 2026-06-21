@@ -2,22 +2,182 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Border Background="{Binding BackgroundColor, Converter={StaticResource StringToBrushConverter}}"
-            BorderBrush="{Binding BorderColor, Converter={StaticResource StringToBrushConverter}}"
+    <UserControl.Resources>
+        <!-- Transparent icon button with hover, used for the system status glyphs -->
+        <Style x:Key="StatusIconButton" TargetType="Button">
+            <Setter Property="Width"  Value="34"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="FontFamily"      Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize"        Value="15"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#33FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#55FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- A single Windows third-party tray icon (ManagedShell NotifyIcon) -->
+        <DataTemplate x:Key="TrayIconTemplate">
+            <Border Width="24" Height="40" Background="Transparent"
+                    ToolTip="{Binding Title}"
+                    MouseDown="TrayIcon_MouseDown"
+                    MouseUp="TrayIcon_MouseUp"
+                    MouseEnter="TrayIcon_MouseEnter"
+                    MouseLeave="TrayIcon_MouseLeave"
+                    MouseMove="TrayIcon_MouseMove">
+                <Image Source="{Binding Icon, Mode=OneWay}"
+                       Width="16" Height="16"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+            </Border>
+        </DataTemplate>
+
+        <!-- Overflow chevron toggle -->
+        <Style x:Key="OverflowToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width"  Value="26"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background"  Value="Transparent"/>
+            <Setter Property="Foreground"  Value="White"/>
+            <Setter Property="FontFamily"  Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+            <Setter Property="FontSize"    Value="12"/>
+            <Setter Property="Cursor"      Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#33FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#55FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Border BorderBrush="{Binding BorderColor, Converter={StaticResource StringToBrushConverter}}"
             BorderThickness="{Binding BorderThickness}">
 
-        <!-- Clock only -->
-        <StackPanel VerticalAlignment="Center"
-                    HorizontalAlignment="Right"
-                    Margin="0,0,12,0">
-            <TextBlock x:Name="ClockTime"
-                       FontSize="14" FontWeight="SemiBold"
-                       Foreground="White"
-                       HorizontalAlignment="Right"/>
-            <TextBlock x:Name="ClockDate"
-                       FontSize="10"
-                       Foreground="#AAAAAA"
-                       HorizontalAlignment="Right"/>
-        </StackPanel>
+        <Border.Background>
+            <MultiBinding Converter="{StaticResource ColorOpacityToBrushConverter}">
+                <Binding Path="BackgroundColor"/>
+                <Binding Path="DataContext.BackgroundOpacity"
+                         RelativeSource="{RelativeSource AncestorType=Window}"/>
+            </MultiBinding>
+        </Border.Background>
+
+        <DockPanel LastChildFill="False">
+
+            <!-- Clock (rightmost): left-click opens the calendar/notification flyout -->
+            <StackPanel DockPanel.Dock="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        Cursor="Hand"
+                        ToolTip="Benachrichtigungen &amp; Kalender"
+                        MouseLeftButtonUp="Clock_Click"
+                        Margin="8,0,12,0">
+                <StackPanel.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Benachrichtigungen / Kalender" Click="ClockNotifications_Click"/>
+                        <MenuItem Header="Datum und Uhrzeit ändern…"     Click="ClockDateTime_Click"/>
+                        <Separator/>
+                        <MenuItem Header="WinTaskSplitter Einstellungen…" Click="ClockSettings_Click"/>
+                    </ContextMenu>
+                </StackPanel.ContextMenu>
+                <TextBlock x:Name="ClockTime"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="White"
+                           HorizontalAlignment="Right"/>
+                <TextBlock x:Name="ClockDate"
+                           FontSize="10"
+                           Foreground="#AAAAAA"
+                           HorizontalAlignment="Right"/>
+            </StackPanel>
+
+            <!-- System status icons: WLAN / Sound / Akku -->
+            <StackPanel x:Name="StatusPanel"
+                        DockPanel.Dock="Right"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button Style="{StaticResource StatusIconButton}"
+                        Content="{Binding WifiGlyph}"
+                        ToolTip="{Binding WifiTooltip}"
+                        Command="{Binding OpenNetworkFlyoutCommand}"/>
+                <Button Style="{StaticResource StatusIconButton}"
+                        Content="{Binding VolumeGlyph}"
+                        ToolTip="{Binding VolumeTooltip}"
+                        Command="{Binding OpenSoundFlyoutCommand}"/>
+                <Button Style="{StaticResource StatusIconButton}"
+                        Content="{Binding BatteryGlyph}"
+                        ToolTip="{Binding BatteryTooltip}"
+                        Command="{Binding OpenBatteryFlyoutCommand}"
+                        Visibility="{Binding BatteryVisible,
+                                     Converter={StaticResource BoolToVisibilityConverter}}"/>
+            </StackPanel>
+
+            <!-- Pinned (always-visible) third-party tray icons -->
+            <ItemsControl x:Name="PinnedTrayIcons"
+                          DockPanel.Dock="Right"
+                          VerticalAlignment="Center"
+                          ItemTemplate="{StaticResource TrayIconTemplate}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Overflow chevron: reveals hidden/unpinned tray icons -->
+            <ToggleButton x:Name="OverflowToggle"
+                          DockPanel.Dock="Right"
+                          Style="{StaticResource OverflowToggleStyle}"
+                          Content="&#xE70E;"
+                          ToolTip="Ausgeblendete Symbole anzeigen"/>
+
+            <Popup PlacementTarget="{Binding ElementName=OverflowToggle}"
+                   Placement="Top"
+                   StaysOpen="False"
+                   AllowsTransparency="True"
+                   IsOpen="{Binding IsChecked, ElementName=OverflowToggle, Mode=TwoWay}">
+                <Border Background="#FF2A2A2A" BorderBrush="#FF555555" BorderThickness="1"
+                        CornerRadius="6" Padding="6" Margin="0,0,0,6">
+                    <ItemsControl x:Name="UnpinnedTrayIcons"
+                                  MaxWidth="260"
+                                  ItemTemplate="{StaticResource TrayIconTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Border>
+            </Popup>
+
+        </DockPanel>
     </Border>
 </UserControl>

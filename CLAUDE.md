@@ -11,7 +11,9 @@ Entwickler: Pantelis Birokas, 42" 4K Monitor (3840×2160).
 - **C# + WPF**, .NET 9, `net9.0-windows`
 - **CommunityToolkit.Mvvm** — MVVM (ObservableObject, RelayCommand, ObservableProperty)
 - **Microsoft.Xaml.Behaviors.Wpf** — XAML Behaviors
-- **Hardcodet.NotifyIcon.Wpf** — System-Tray
+- **Hardcodet.NotifyIcon.Wpf** — eigenes Tray-Icon der App
+- **ManagedShell** — eingebetteter Windows-Infobereich (Tray-Icons fremder Apps) + `ExplorerHelper`
+  zum Verstecken der Explorer-Taskleiste. Nur der Tray-Service ist aktiv (`EnableTasksService=false`).
 - `UseWPF=true`, `UseWindowsForms=true` (für `Screen`-Klasse)
 
 ## Wichtige Eigenheit: Namespace-Konflikte
@@ -47,7 +49,10 @@ dotnet build src/WinTaskSplitter/WinTaskSplitter.csproj --configuration Debug
 dotnet run --project src/WinTaskSplitter/WinTaskSplitter.csproj
 ```
 
-- App benötigt Admin-Rechte → UAC-Prompt erscheint automatisch (Self-Elevation in App.xaml.cs)
+- App läuft **ohne Admin-Rechte** (asInvoker, keine Self-Elevation). Wichtig: Ein elevierter
+  Prozess kann wegen UIPI keine `Shell_NotifyIcon`-Nachrichten normaler Apps empfangen → der
+  eingebettete Tray (ManagedShell) würde fast alle Icons verpassen. Taskleiste verstecken
+  funktioniert in derselben Session auch ohne Admin.
 - Vor einem neuen Build: `WinTaskSplitter.exe` im Task-Manager beenden (sperrt die .exe)
 
 ## Taskleiste wiederherstellen (Notfall)
