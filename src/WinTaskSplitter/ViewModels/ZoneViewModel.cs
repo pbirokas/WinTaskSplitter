@@ -21,16 +21,12 @@ public partial class ZoneViewModel : ObservableObject
     [ObservableProperty] private double _borderThickness;
     [ObservableProperty] private double _width;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsVisible))]
-    private bool _showStartButton;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsVisible))]
-    private ObservableCollection<AppItemViewModel> _apps = [];
+    [ObservableProperty] private bool _showStartButton;
+    [ObservableProperty] private ObservableCollection<AppItemViewModel> _apps = [];
 
     // A zone with the Start button is always visible, even when empty.
     public bool IsVisible => !IsGeneral || ShowStartButton || Apps.Count > 0;
+    private bool _isVisibleCache;
 
     public ZoneViewModel(Zone model)
     {
@@ -42,7 +38,21 @@ public partial class ZoneViewModel : ObservableObject
         _borderThickness = model.BorderThickness;
         _width           = model.Width;
 
-        Apps.CollectionChanged += (_, _) => OnPropertyChanged(nameof(IsVisible));
+        _isVisibleCache = IsVisible;
+        // Only notify when IsVisible actually flips — otherwise routine app churn
+        // (windows opening/closing, tracker reconcile) would trigger a full grid
+        // rebuild and reset zone widths mid-resize.
+        Apps.CollectionChanged += (_, _) => RaiseIsVisibleIfChanged();
+    }
+
+    partial void OnShowStartButtonChanged(bool value) => RaiseIsVisibleIfChanged();
+
+    private void RaiseIsVisibleIfChanged()
+    {
+        bool visible = IsVisible;
+        if (visible == _isVisibleCache) return;
+        _isVisibleCache = visible;
+        OnPropertyChanged(nameof(IsVisible));
     }
 
     public void AddApp(AppItemViewModel app)

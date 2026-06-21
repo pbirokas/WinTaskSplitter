@@ -4,6 +4,7 @@ using System.Text;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using WinTaskSplitter.Native;
 
 namespace WinTaskSplitter.Services;
@@ -15,6 +16,7 @@ public class WindowTracker : IDisposable
     private IntPtr  _hookWnd;
     private uint    _shellHookMsg;
     private HwndSource? _source;
+    private DispatcherTimer? _reconcileTimer;
 
     private const int HSHELL_WINDOWCREATED   = 1;
     private const int HSHELL_WINDOWDESTROYED = 2;
@@ -32,16 +34,31 @@ public class WindowTracker : IDisposable
         _source = HwndSource.FromHwnd(_hookWnd);
         _source?.AddHook(WndProc);
 
-        EnumerateExistingWindows();
+        Reconcile(); // initial population (prune is a no-op on the empty collection)
+
+        // Safety net: shell-hook events can be missed and some windows (cloaked UWP hosts)
+        // never raise WINDOWDESTROYED. Periodically reconcile against the real window set.
+        _reconcileTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _reconcileTimer.Tick += (_, _) => Reconcile();
+        _reconcileTimer.Start();
     }
 
-    private void EnumerateExistingWindows()
+    // Runs on the UI thread (DispatcherTimer): add windows we missed, drop ghosts.
+    private void Reconcile()
     {
-        NativeMethods.EnumWindows((hWnd, _) =>
+        var valid = new HashSet<IntPtr>();
+        NativeMethods.EnumWindows((h, _) =>
         {
-            if (IsTaskbarWindow(hWnd)) AddWindow(hWnd);
+            if (IsTaskbarWindow(h)) valid.Add(h);
             return true;
         }, IntPtr.Zero);
+
+        for (int i = Windows.Count - 1; i >= 0; i--)
+            if (!valid.Contains(Windows[i].Handle))
+                Windows.RemoveAt(i);
+
+        foreach (var h in valid)
+            AddWindow(h); // dedups internally
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -78,12 +95,20 @@ public class WindowTracker : IDisposable
         int exStyle = NativeMethods.GetWindowLong(hWnd, NativeMethods.GWL_EXSTYLE);
         if ((exStyle & NativeMethods.WS_EX_TOOLWINDOW) != 0) return false;
 
+        // Cloaked windows are invisible UWP/host windows (e.g. "Windows-Eingabeerfahrung",
+        // "Windows Shell Experience Host") — locale-independent ghost filter.
+        if (IsCloaked(hWnd)) return false;
+
         var title = GetTitle(hWnd);
         if (string.IsNullOrWhiteSpace(title)) return false;
-        if (title is "Program Manager" or "Windows Input Experience") return false;
+        if (title is "Program Manager") return false;
 
         return true;
     }
+
+    private static bool IsCloaked(IntPtr hWnd)
+        => NativeMethods.DwmGetWindowAttribute(hWnd, NativeMethods.DWMWA_CLOAKED, out int cloaked, sizeof(int)) == 0
+           && cloaked != 0;
 
     private void AddWindow(IntPtr hWnd)
     {
@@ -121,6 +146,7 @@ public class WindowTracker : IDisposable
 
     public void Dispose()
     {
+        _reconcileTimer?.Stop();
         if (_hookWnd != IntPtr.Zero)
             NativeMethods.DeregisterShellHookWindow(_hookWnd);
         _source?.RemoveHook(WndProc);

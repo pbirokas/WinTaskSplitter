@@ -104,14 +104,6 @@ public partial class ZonePanel : UserControl
 
     // ── Zone context menu ─────────────────────────────────────────────────────
 
-    private void EditZone_Click(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is not ZoneViewModel zone) return;
-        var dlg = new ZoneEditDialog(zone);
-        if (dlg.ShowDialog() == true)
-            GetTaskbarVm()?.SaveSettings();
-    }
-
     private void AddZone_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new InputDialog("Neue Zone", "Name der Zone:", "Neue Zone");

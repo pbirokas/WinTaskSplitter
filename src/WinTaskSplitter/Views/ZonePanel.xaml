@@ -20,8 +20,6 @@
             <ContextMenu>
                 <MenuItem Header="{Binding Name}" IsEnabled="False" FontWeight="Bold"/>
                 <Separator/>
-                <MenuItem Header="Zone bearbeiten..." Click="EditZone_Click"/>
-                <Separator/>
                 <MenuItem Header="Neue Zone hinzufügen" Click="AddZone_Click"/>
                 <MenuItem Header="Zone löschen"         Click="DeleteZone_Click"/>
                 <Separator/>

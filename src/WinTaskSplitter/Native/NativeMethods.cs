@@ -213,6 +213,12 @@ internal static class NativeMethods
     public const uint TPM_BOTTOMALIGN = 0x0020;
     public const uint WM_SYSCOMMAND   = 0x0112;
 
+    // DWM cloaking — UWP/host windows on another desktop or suspended are "cloaked"
+    // (still IsWindowVisible, but not real taskbar windows). Used to filter ghost icons.
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+    public const int DWMWA_CLOAKED = 14;
+
     // DWM thumbnail
     [DllImport("dwmapi.dll")]
     public static extern int DwmRegisterThumbnail(IntPtr dest, IntPtr src, out IntPtr phThumbnailId);

@@ -7,6 +7,7 @@ public class AppSettings
     public bool          StartWithWindows { get; set; } = false;
     public double        LabelFontSize      { get; set; } = 8;
     public double        BackgroundOpacity  { get; set; } = 1.0; // 0.0 = transparent, 1.0 = deckend
+    public double        SplitterWidth      { get; set; } = 6;   // Breite des Spalts zwischen Zonen (px)
     public Guid          StartButtonZoneId  { get; set; } = Guid.Empty;
     public List<Zone>    Zones              { get; set; } = [];
     public List<AppAssignment> Assignments { get; set; } = [];

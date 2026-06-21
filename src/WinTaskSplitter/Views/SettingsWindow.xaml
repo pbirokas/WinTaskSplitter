@@ -128,6 +128,28 @@
                        Margin="8,0,0,0"/>
         </Grid>
 
+        <!-- Spaltbreite zwischen Zonen -->
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="44"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Spaltbreite zwischen Zonen"
+                       Style="{StaticResource FieldLabel}"/>
+            <Slider Grid.Column="1"
+                    Minimum="2" Maximum="12"
+                    TickFrequency="1" IsSnapToTickEnabled="True"
+                    VerticalAlignment="Center"
+                    Value="{Binding SplitterWidth}"/>
+            <TextBlock Grid.Column="2"
+                       Text="{Binding SplitterWidth, StringFormat={}{0:F0} px}"
+                       Foreground="White" FontSize="12"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0"/>
+        </Grid>
+
         <!-- Start-Schaltfläche -->
         <Grid Margin="0,8,0,0">
             <Grid.ColumnDefinitions>

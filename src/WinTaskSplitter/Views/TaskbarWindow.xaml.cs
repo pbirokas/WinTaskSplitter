@@ -20,6 +20,8 @@ public partial class TaskbarWindow : Window
     private readonly WindowTracker _tracker;
     private readonly bool _managedTaskbar;
     private SettingsWindow? _settingsWindow;
+    private bool _resizing;        // a zone GridSplitter is being dragged
+    private bool _rebuildPending;  // a grid rebuild was requested during a drag
     private const double BarHeight = 56;
 
     public TaskbarWindow(TaskbarViewModel viewModel, WindowTracker tracker,
@@ -42,8 +44,17 @@ public partial class TaskbarWindow : Window
         Height = BarHeight;
 
         viewModel.Zones.CollectionChanged += OnZonesCollectionChanged;
+        viewModel.PropertyChanged += OnTaskbarVmPropertyChanged;
         foreach (var zone in viewModel.Zones)
             SubscribeZoneVisibility(zone);
+    }
+
+    private void OnTaskbarVmPropertyChanged(object? sender,
+        System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Splitter width affects the column layout — rebuild so changes apply live.
+        if (e.PropertyName == nameof(TaskbarViewModel.SplitterWidth))
+            Dispatcher.InvokeAsync(BuildZonesGrid);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -88,11 +99,17 @@ public partial class TaskbarWindow : Window
     // Zone widths are stored as Star weights so they always fill the available space.
     public void BuildZonesGrid()
     {
+        // Never rebuild mid-resize — it would recreate the columns from the stored
+        // zone widths and snap the drag back. Defer until the drag finishes.
+        if (_resizing) { _rebuildPending = true; return; }
         if (DataContext is not TaskbarViewModel vm) return;
 
         // Unsubscribe old splitters before discarding them
         foreach (var child in ZonesGrid.Children.OfType<GridSplitter>())
+        {
+            child.DragStarted   -= OnSplitterDragStarted;
             child.DragCompleted -= OnSplitterDragCompleted;
+        }
 
         ZonesGrid.ColumnDefinitions.Clear();
         ZonesGrid.Children.Clear();
@@ -117,10 +134,11 @@ public partial class TaskbarWindow : Window
             {
                 ZonesGrid.ColumnDefinitions.Add(new ColumnDefinition
                 {
-                    Width = new GridLength(4)
+                    Width = new GridLength(vm.SplitterWidth) // user-configurable gap/hit width
                 });
 
                 var splitter = CreateZoneSplitter();
+                splitter.DragStarted   += OnSplitterDragStarted;
                 splitter.DragCompleted += OnSplitterDragCompleted;
                 Grid.SetColumn(splitter, i * 2 + 1);
                 ZonesGrid.Children.Add(splitter);
@@ -137,6 +155,8 @@ public partial class TaskbarWindow : Window
             ResizeDirection     = GridResizeDirection.Columns,
             ResizeBehavior      = GridResizeBehavior.PreviousAndNext,
             Cursor              = Cursors.SizeWE,
+            // Live resize (no preview adorner — its removal NREs in our dynamic grid).
+            // Mid-drag layout churn is instead prevented by freezing the system zone.
             ShowsPreview        = false
         };
 
@@ -151,19 +171,40 @@ public partial class TaskbarWindow : Window
         return splitter;
     }
 
+    private void OnSplitterDragStarted(object sender, DragStartedEventArgs e)
+    {
+        _resizing = true;
+        // Pin the auto-sized system zone to its current width for the duration of the
+        // drag. Otherwise its per-second clock update re-sizes it, the DockPanel
+        // re-arranges, and the live star-column resize loses its basis and snaps back.
+        SystemZonePanelControl.Width = SystemZonePanelControl.ActualWidth;
+    }
+
     private void OnSplitterDragCompleted(object sender, DragCompletedEventArgs e)
     {
-        if (DataContext is not TaskbarViewModel vm) return;
+        _resizing = false;
 
-        var zones = vm.Zones.Where(z => z.IsVisible).ToList();
-        for (int i = 0; i < zones.Count; i++)
+        if (DataContext is TaskbarViewModel vm)
         {
-            // Star weight after drag is the new relative width
-            double newWeight = ZonesGrid.ColumnDefinitions[i * 2].Width.Value;
-            if (newWeight > 0)
-                zones[i].Width = newWeight;
+            var zones = vm.Zones.Where(z => z.IsVisible).ToList();
+            for (int i = 0; i < zones.Count; i++)
+            {
+                // Star weight after drag is the new relative width
+                double newWeight = ZonesGrid.ColumnDefinitions[i * 2].Width.Value;
+                if (newWeight > 0)
+                    zones[i].Width = newWeight;
+            }
+            vm.SaveSettings();
         }
-        vm.SaveSettings();
+
+        SystemZonePanelControl.Width = double.NaN; // back to auto-size
+
+        // Apply any rebuild that was deferred while dragging (now uses the saved widths).
+        if (_rebuildPending)
+        {
+            _rebuildPending = false;
+            BuildZonesGrid();
+        }
     }
 
     public void OpenSettings()
@@ -186,6 +227,7 @@ public partial class TaskbarWindow : Window
         if (DataContext is TaskbarViewModel vm)
         {
             vm.Zones.CollectionChanged -= OnZonesCollectionChanged;
+            vm.PropertyChanged -= OnTaskbarVmPropertyChanged;
             foreach (var zone in vm.Zones)
                 zone.PropertyChanged -= OnZonePropertyChanged;
         }

@@ -54,6 +54,8 @@ dotnet run --project src/WinTaskSplitter/WinTaskSplitter.csproj
   eingebettete Tray (ManagedShell) würde fast alle Icons verpassen. Taskleiste verstecken
   funktioniert in derselben Session auch ohne Admin.
 - Vor einem neuen Build: `WinTaskSplitter.exe` im Task-Manager beenden (sperrt die .exe)
+- Unbehandelte Fehler landen in `%APPDATA%\WinTaskSplitter\error.log` (voller Stacktrace) —
+  erste Anlaufstelle bei „Unerwarteter Fehler"-Dialogen
 
 ## Taskleiste wiederherstellen (Notfall)
 

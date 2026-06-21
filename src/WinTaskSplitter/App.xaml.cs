@@ -81,6 +81,7 @@ public partial class App : Application
     private void OnDispatcherException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         RestoreTaskbar();
+        LogError(e.Exception);
         System.Diagnostics.Trace.TraceError(
             $"[WinTaskSplitter] Unhandled exception: {e.Exception}");
         MessageBox.Show(
@@ -94,6 +95,21 @@ public partial class App : Application
     private void OnDomainException(object sender, UnhandledExceptionEventArgs e)
     {
         RestoreTaskbar();
+        if (e.ExceptionObject is Exception ex) LogError(ex);
+    }
+
+    // Persist crash details so unexpected errors are diagnosable after the fact.
+    private static void LogError(Exception ex)
+    {
+        try
+        {
+            var path = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "WinTaskSplitter", "error.log");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            System.IO.File.AppendAllText(path, $"{DateTime.Now:o}\n{ex}\n\n");
+        }
+        catch { /* logging must never throw */ }
     }
 
     protected override void OnExit(ExitEventArgs e)

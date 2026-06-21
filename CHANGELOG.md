@@ -14,8 +14,15 @@
 - Neue Transparenz-Option: Hintergrund-Deckkraft der Zonen per Regler einstellbar
 - Start-Schaltfläche zeigt jetzt das originale Windows-11-Logo
 
+### Zonen & Stabilität
+- Zonenbreite lässt sich jetzt ruckelfrei anpassen – kein Zurückschnappen mehr
+- Breite des Spalts zwischen den Zonen per Regler einstellbar (2–12 px)
+- Icons beendeter Apps verschwinden zuverlässig (keine „Geister-Icons" mehr)
+- Aufgeräumtes Zonen-Kontextmenü: „Zone bearbeiten" entfernt (alles in den Einstellungen)
+
 ### Unter der Haube
 - App läuft ohne Administrator-Rechte – kein UAC-Prompt mehr beim Start
+- Unerwartete Fehler werden in `%APPDATA%\WinTaskSplitter\error.log` protokolliert
 
 ## 2026-06-19 — Erster Release
 
